@@ -1,0 +1,170 @@
+/* Overall Team Event Page */
+.team-event-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: none !important;
+    color: white;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+/* Team Event Form Section */
+.team-event-form-box {
+    background: transparent;
+    backdrop-filter: blur(10px);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+    border: 2px solid rgba(0, 255, 255, 0.5);
+    transition: transform 0.3s ease-in-out;
+}
+
+.team-event-form-box h2 {
+    color: #00e5ff;
+    font-size: 28px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.team-event-form-box p {
+    color: #c9d1d9;
+    margin-bottom: 20px;
+}
+
+/* Team Event Form Inputs */
+.team-event-form input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(0, 255, 255, 0.4);
+    border-radius: 5px;
+    font-size: 16px;
+    background: #161b22;
+    color: #ffffff;
+    transition: border 0.3s, box-shadow 0.3s;
+}
+
+.team-event-form input:focus {
+    border-color: #00e5ff;
+    outline: none;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
+}
+
+/* Dynamic Team Member Inputs */
+.team-member {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+/* Submit Button */
+.team-event-form button {
+    background: linear-gradient(135deg, #00e5ff, #0044ff);
+    color: white;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: all 0.3s ease-in-out;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.team-event-form button:hover {
+    background: linear-gradient(135deg, #0044ff, #00e5ff);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+    transform: scale(1.05);
+}
+
+/* Animation */
+@keyframes neon-glow {
+    0% {
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    }
+}
+
+.team-event-form-box {
+    animation: neon-glow 2s infinite alternate;
+}
+
+
+.qr-section {
+    text-align: center;
+    margin: 20px 0;
+  }
+  
+  .qr-code {
+    width: 200px;
+    height: 200px;
+    border: 2px solid #333;
+    border-radius: 10px;
+    padding: 10px;
+    background: #fff;
+  }
+  
+  .upi-text {
+    font-size: 16px;
+    font-weight: bold;
+    color: #f4eeee;
+    margin-top: 10px;
+  }
+  
+  /* Submit Button */
+.submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #ff4e50, #fc913a); /* Vibrant contrast */
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    text-transform: uppercase;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 0 10px rgba(255, 78, 80, 0.5);
+}
+
+.submit-btn:hover {
+    background: linear-gradient(135deg, #fc913a, #ff4e50);
+    box-shadow: 0 0 20px rgba(255, 78, 80, 0.8);
+    transform: scale(1.05);
+}
+ 
+
+.download-btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-align: center;
+    color: white;
+    background: linear-gradient(135deg, #00c6ff, #0072ff);
+    border-radius: 5px;
+    text-decoration: none;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 0 10px rgba(0, 198, 255, 0.6);
+}
+
+.download-btn:hover {
+    background: linear-gradient(135deg, #0072ff, #00c6ff);
+    box-shadow: 0 0 15px rgba(0, 198, 255, 0.9);
+    transform: scale(1.05);
+}

@@ -1,0 +1,125 @@
+/* Overall Contact Page */
+.contact-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  
+/* Contact Form Section */
+.contact-form-box {
+    background: #0d1117; /* Dark background (GitHub-like theme) */
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3); /* Neon glow effect */
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+    border: 2px solid rgba(0, 255, 255, 0.5); /* Neon border */
+    transition: transform 0.3s ease-in-out;
+  }
+  
+  
+  .contact-form-box h2 {
+    color: #00e5ff; /* Neon cyan color */
+    font-size: 28px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  
+  .contact-form-box p {
+    color: #c9d1d9;
+    margin-bottom: 20px;
+  }
+  
+  /* Contact Form Inputs */
+  .contact-form input,
+  .contact-form textarea {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(0, 255, 255, 0.4);
+    border-radius: 5px;
+    font-size: 16px;
+    background: #161b22;
+    color: #ffffff;
+    transition: border 0.3s, box-shadow 0.3s;
+  }
+  
+  .contact-form input:focus,
+  .contact-form textarea:focus {
+    border-color: #00e5ff;
+    outline: none;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
+  }
+  
+  /* Submit Button */
+  .contact-form button {
+    background: linear-gradient(135deg, #00e5ff, #0044ff);
+    color: white;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: all 0.3s ease-in-out;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  
+  .contact-form button:hover {
+    background: linear-gradient(135deg, #0044ff, #00e5ff);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+    transform: scale(1.05);
+  }
+  
+  /* Add a subtle animation */
+  @keyframes neon-glow {
+    0% {
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+    }
+    100% {
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    }
+  }
+  
+  .contact-form-box {
+    animation: neon-glow 2s infinite alternate;
+  }
+  
+  /* Map Section */
+  .map-section {
+    width: 100%;
+    height: 700px;
+    text-align: center;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+  
+  .map-section h2 {
+    color: #2575fc;
+    margin-bottom: 15px;
+    font-size: 50px;
+  }
+  
+  .map-container {
+    width: 100%;
+    height: 90%;
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  
+  .map-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+  

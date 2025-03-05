@@ -1,0 +1,217 @@
+import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+import "./TeamEvent.css";
+import qrImage from "./payment-qr.png";
+
+const TeamEvent = () => {
+  const location = useLocation();
+  const event = location.state?.event;
+  const eventId = event?.id;
+
+  const [eventDetails, setEventDetails] = useState(null);
+  const [rulebookLink, setRulebookLink] = useState(null);
+
+  const [qrData, setQrData] = useState({ upiId: "", qrImage: "" });
+  const [formData, setFormData] = useState({
+    teamName: "",
+    leaderName: "",
+    leaderCollege: "",
+    leaderNumber: "",
+    leaderEmail: "",
+    paymentMethod: "paytm",
+    utrNumber: "",
+    receiptNumber: "",
+    paymentImage: null,
+    teamMembers: [],
+  });
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+
+  useEffect(() => {
+    if (eventId) {
+      fetch(`http://localhost:8080/api/events/${eventId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          setEventDetails(data);
+          console.log("Rulebook link: ", data.rulebook);
+          setRulebookLink(data.rulebook);
+          if (data.maxTeamSize > 1) {
+            setFormData((prev) => ({
+              ...prev,
+              teamMembers: Array.from({ length: data.maxTeamSize - 1 }, () => ({
+                name: "",
+                college: "",
+                number: "",
+                email: "",
+              })),
+            }));
+          }
+        })
+        .catch((error) => console.error("Error fetching event details:", error));
+    }
+
+    // Fetch QR Data
+        fetch("http://localhost:8080/api/qr/getall")
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.length > 0) {
+              setQrData({
+                upiId: data[0].upiId,
+                qrImage: `data:image/png;base64,${data[0].qrImage}`,
+              });
+            }
+          })
+          .catch((error) => console.error("Error fetching QR data:", error));
+  }, [eventId]);
+
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    setFormData({ ...formData, paymentImage: file });
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => setPreviewImage(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleMemberChange = (index, field, value) => {
+    const updatedMembers = [...formData.teamMembers];
+    updatedMembers[index][field] = value;
+    setFormData({ ...formData, teamMembers: updatedMembers });
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!eventId) {
+      alert("Event ID is missing!");
+      return;
+    }
+  
+    const data = new FormData();
+    Object.keys(formData).forEach((key) => {
+      if (key !== "teamMembers" && formData[key]) {
+        data.append(key, formData[key]);
+      }
+    });
+    data.append("eventId", eventId);
+    data.append("teamMembers", JSON.stringify(formData.teamMembers));
+  
+    try {
+      const response = await fetch("http://localhost:8080/api/registered-students/register-team", {
+        method: "POST",
+        body: data,
+        credentials: "include", // Ensures HTTP-only cookies are sent
+      });
+  
+      if (response.ok) {
+        setIsSubmitted(true);
+      } else {
+        const errorData = await response.json();
+        alert(`Registration failed: ${errorData.message}`);
+      }
+    } catch (error) {
+      console.error("Error during registration:", error);
+      alert("Registration failed.");
+    }
+  };
+  
+
+  return (
+    <div className="event-container">
+      {eventDetails && (
+        <div className="form-container">
+          {!isSubmitted && <h2>Register Your Team for {eventDetails.eventName}</h2>}
+          {isSubmitted ? (
+            <p className="success-message">Registration pending. You will be notified by email.</p>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <div className="input-group">
+                <input type="text" name="teamName" placeholder="Team Name" required onChange={handleChange} />
+              </div>
+              <div className="input-group">
+                <input type="text" name="leaderName" placeholder="Leader Name" required onChange={handleChange} />
+              </div>
+              <div className="input-group">
+                <input type="text" name="leaderCollege" placeholder="Leader College" required onChange={handleChange} />
+              </div>
+              <div className="input-group">
+                <input type="tel" name="leaderNumber" placeholder="Leader Contact" required pattern="[0-9]{10}" onChange={handleChange} />
+              </div>
+              <div className="input-group">
+                <input type="email" name="leaderEmail" placeholder="Leader Email" required onChange={handleChange} />
+              </div>
+              {formData.teamMembers.map((member, index) => (
+                <div key={index} className="team-member">
+                  <input type="text" placeholder="Member Name" required value={member.name} onChange={(e) => handleMemberChange(index, "name", e.target.value)} />
+                  <input type="text" placeholder="College" required value={member.college} onChange={(e) => handleMemberChange(index, "college", e.target.value)} />
+                  <input type="tel" placeholder="Contact" required pattern="[0-9]{10}" value={member.number} onChange={(e) => handleMemberChange(index, "number", e.target.value)} />
+                  <input type="email" placeholder="Email" required value={member.email} onChange={(e) => handleMemberChange(index, "email", e.target.value)} />
+                </div>
+              ))}
+              <div>
+                <p className="mb-2">Payment Method:</p>
+                <div className="checkbox-container">
+                  {["paytm", "phonepay", "gpay", "bank", "cash"].map((method) => (
+                    <label key={method}>
+                      <input type="radio" name="paymentMethod" value={method} checked={formData.paymentMethod === method} onChange={handleChange} />
+                      {method.charAt(0).toUpperCase() + method.slice(1)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+  
+              {formData.paymentMethod !== "cash" ? (
+                              <>
+                                <div className="qr-section">
+                                  <p>Scan the QR Code to Pay:</p>
+                                  {qrData.qrImage ? (
+                                    <img src={qrData.qrImage} alt="QR Code for Payment" className="qr-code" />
+                                  ) : (
+                                    <p>Loading QR Code...</p>
+                                  )}
+                                  <p className="upi-text">UPI ID: {qrData.upiId || "Loading..."}</p>
+                                </div>
+                                <div className="input-group">
+                                  <input type="text" name="utrNumber" placeholder="UTR Number" required pattern="[0-9]{12}" onChange={handleChange} />
+                                </div>
+                                <div className="input-group">
+                                  <label className="block mb-2">Payment Screenshot</label>
+                                  <input type="file" accept="image/*" required onChange={handleFileChange} />
+                                  {previewImage && <img src={previewImage} alt="Preview" className="image-preview" />}
+                                </div>
+                              </>
+              ) : (
+                <>
+                  <div className="input-group">
+                    <input type="text" name="receiptNumber" placeholder="Receipt Number" required onChange={handleChange} />
+                  </div>
+                  <div className="input-group">
+                    <label>Receipt Screenshot</label>
+                    <input type="file" accept="image/*" required onChange={handleFileChange} />
+                    {previewImage && <img src={previewImage} alt="Preview" className="image-preview" />}
+                  </div>
+                </>
+              )}
+              <button type="submit" className="submit-btn">Submit</button>
+            </form>
+          )}
+  
+          {rulebookLink && (
+            <div className="rulebook-section">
+              <a href={`data:application/pdf;base64,${rulebookLink}`} download="Team_Event_Rulebook.pdf" className="download-btn">
+                Download Rule Book
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+  
+};
+
+export default TeamEvent;

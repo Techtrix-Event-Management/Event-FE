@@ -1,0 +1,73 @@
+/* Footer Styles */
+.footer {
+  background: #0d1117; /* Dark background */
+  color: #ffffff;
+  padding: 40px 20px;
+  text-align: center;
+  border-top: 2px solid rgba(0, 255, 255, 0.3);
+  box-shadow: 0 -4px 10px rgba(0, 255, 255, 0.2);
+  margin-top: 50px;
+
+
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Logo and Branding */
+.footer-logo h2 {
+  color: #00e5ff; /* Neon cyan color */
+  font-size: 28px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.footer-logo p {
+  color: #c9d1d9;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+/* Navigation Links */
+.footer-links {
+  margin-top: 20px;
+}
+
+.footer-links a {
+  color: #00e5ff;
+  text-decoration: none;
+  margin: 0 15px;
+  font-size: 16px;
+  transition: color 0.3s;
+}
+
+.footer-links a:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+/* Social Icons */
+.footer-socials {
+  margin-top: 20px;
+}
+
+.footer-socials a {
+  color: #00e5ff;
+  font-size: 20px;
+  margin: 0 10px;
+  transition: transform 0.3s, color 0.3s;
+}
+
+.footer-socials a:hover {
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+/* Footer Bottom */
+.footer-bottom {
+  margin-top: 30px;
+  font-size: 14px;
+  color: #c9d1d9;
+}
