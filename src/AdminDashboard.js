@@ -649,7 +649,7 @@ const addCollegeHeader = (doc) => {
     
     Greetings from the TECHTRIX 2025 Team!
     
-    We are pleased to inform you that you have successfully registered for ${eventName}, the National Level Technical Fest organized by the Department of Computer Science & Engineering and Artificial Intelligence, Priyadarshini J. L. College of Engineering.
+    We are pleased to inform you that you have successfully registered for ${eventName}, the Technical Fest organized by the Department of Computer Science & Engineering and Artificial Intelligence, Priyadarshini J. L. College of Engineering.
     
     Further updates or changes regarding the event will be communicated via email or through our official website.
     
