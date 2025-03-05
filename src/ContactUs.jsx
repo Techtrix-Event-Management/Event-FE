@@ -71,6 +71,9 @@ const ContactUs = () => {
               name="name"
               placeholder="Your Name"
               value={formData.name}
+              style={{
+                width:"100%"
+              }}
               onChange={handleChange}
               required
             />
@@ -80,6 +83,9 @@ const ContactUs = () => {
               name="email"
               placeholder="Your Email"
               value={formData.email}
+              style={{
+                width:"100%"
+              }}
               onChange={handleChange}
               required
             />
@@ -90,6 +96,9 @@ const ContactUs = () => {
               name="number"
               placeholder="Your Contact Number"
               value={formData.number}
+              style={{
+                width:"100%"
+              }}
               onChange={handleChange}
               required
             />

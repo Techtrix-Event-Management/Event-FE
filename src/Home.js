@@ -37,8 +37,8 @@ const Home = () => {
 
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/events")
-      .then((response) => response.json())
+    fetch(`${process.env.REACT_APP_API_URL}/api/events`)
+          .then((response) => response.json())
       .then((data) => {
         setEvents(data);
         if (data.length > 0) {
@@ -70,8 +70,8 @@ const Home = () => {
   };
   const navigate = useNavigate();
   useEffect(() => {
-    fetch("http://localhost:8080/api/events")
-      .then((response) => response.json())
+    fetch(`${process.env.REACT_APP_API_URL}/api/events`)
+    .then((response) => response.json())
       .then((data) => setEvents(data))
       .catch((error) => console.error("Error fetching events:", error));
   }, []);
@@ -79,7 +79,7 @@ const Home = () => {
   const handleRegisterClick = async (eventId) => {
     try {
       console.log("Fetching event with ID:", eventId);
-      const response = await fetch(`http://localhost:8080/api/events/${eventId}`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/events/${eventId}`);
       if (!response.ok) throw new Error("Event not found");
 
       const event = await response.json();

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import "./Event.css";
-import qrImage from "./payment-qr.png";
 
 const Event = () => {
   const location = useLocation();
@@ -35,15 +34,15 @@ const Event = () => {
 
   useEffect(() => {
     if (eventId) {
-      fetch(`http://localhost:8080/api/events/${eventId}`)
-        .then((res) => res.json())
+      fetch(`${process.env.REACT_APP_API_URL}/api/events/${eventId}`)
+              .then((res) => res.json())
         .then((data) => setEventDetails(data))
         .catch((error) => console.error("Error fetching event details:", error));
     }
 
     // Fetch QR Data
-    fetch("http://localhost:8080/api/qr/getall")
-      .then((res) => res.json())
+    fetch(`${process.env.REACT_APP_API_URL}/api/qr/getall`)
+    .then((res) => res.json())
       .then((data) => {
         if (data.length > 0) {
           setQrData({
@@ -84,7 +83,7 @@ const Event = () => {
     data.append("eventId", eventId);
   
     try {
-      const response = await fetch("http://localhost:8080/api/registered-students/register", {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/registered-students/register`, { 
         method: "POST",
         body: data,
         credentials: "include", // Ensure cookies are included

@@ -29,8 +29,8 @@ const TeamEvent = () => {
 
   useEffect(() => {
     if (eventId) {
-      fetch(`http://localhost:8080/api/events/${eventId}`)
-        .then((res) => res.json())
+      fetch(`${process.env.REACT_APP_API_URL}/api/events/${eventId}`)
+      .then((res) => res.json())
         .then((data) => {
           setEventDetails(data);
           console.log("Rulebook link: ", data.rulebook);
@@ -51,8 +51,8 @@ const TeamEvent = () => {
     }
 
     // Fetch QR Data
-        fetch("http://localhost:8080/api/qr/getall")
-          .then((res) => res.json())
+    fetch(`${process.env.REACT_APP_API_URL}/api/qr/getall`)
+    .then((res) => res.json())
           .then((data) => {
             if (data.length > 0) {
               setQrData({
@@ -101,7 +101,7 @@ const TeamEvent = () => {
     data.append("teamMembers", JSON.stringify(formData.teamMembers));
   
     try {
-      const response = await fetch("http://localhost:8080/api/registered-students/register-team", {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/registered-students/register-team`, {
         method: "POST",
         body: data,
         credentials: "include", // Ensures HTTP-only cookies are sent

@@ -213,7 +213,7 @@ table tr:nth-child(even) {
     border: 1px solid #ccc;
     border-radius: 6px;
     font-size: 16px;
-    color: black;
+    color: black !important;
     outline: none;
     transition: border 0.2s ease-in-out;
   }

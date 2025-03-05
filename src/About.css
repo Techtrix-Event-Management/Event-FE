@@ -31,7 +31,7 @@
 
 body {
   font-family: var(--body-font);
-  background-color: var(--body-color);
+  background-color:none;
   color: var(--text-color);
 }
 

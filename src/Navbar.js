@@ -11,8 +11,8 @@ const Navbar = () => {
 
   useEffect(() => {
     if (localStorage.getItem("loggedIn") === "true") {
-      fetch("http://localhost:8080/api/auth/info", {
-        method: "GET",
+      fetch(`${process.env.REACT_APP_API_URL}/api/auth/info`, {
+      method: "GET",
         credentials: "include",
       })
         .then((res) => {
@@ -47,8 +47,8 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:8080/api/auth/logout", {
-        method: "POST",
+      await fetch(`${process.env.REACT_APP_API_URL}/api/auth/logout`, {
+                method: "POST",
         credentials: "include",
       });
 

@@ -53,8 +53,7 @@ const AdminDashboard = () => {
    
     useEffect(() => {
         if (showEvents) {
-            fetch("http://localhost:8080/api/events")
-                .then(response => response.json())
+            fetch(`${process.env.REACT_APP_API_URL}/api/events`)                .then(response => response.json())
                 .then(data => setEvents(data))
                 .catch(error => console.error("Error fetching events:", error));
         }
@@ -67,8 +66,8 @@ const AdminDashboard = () => {
         setTeams([]);
     
         const url = event.isTeamParticipation 
-            ? `http://localhost:8080/api/auth/${event.id}/teams`
-            : `http://localhost:8080/api/auth/${event.id}/registered-students`;
+        ? `${process.env.REACT_APP_API_URL}/api/auth/${event.id}/teams`
+        : `${process.env.REACT_APP_API_URL}/api/auth/${event.id}/registered-students`;
     
         fetch(url, {
             method: "GET",
@@ -91,7 +90,7 @@ const AdminDashboard = () => {
         .catch(error => console.error("Error fetching students:", error));
     };
     
-    const API_BASE_URL = "http://localhost:8080/api/sponsors";
+    const API_BASE_URL = `${process.env.REACT_APP_API_URL}/api/sponsors`;
     useEffect(() => {
         fetchSponsors();
       }, []);
@@ -195,8 +194,7 @@ const AdminDashboard = () => {
             formData.append("qrImage", selectedQrImage);
         
             try {
-                const response = await fetch("http://localhost:8080/api/qr/postqr", {
-                    method: "POST",
+                const response = await fetch(`${process.env.REACT_APP_API_URL}/api/qr/postqr`, {                    method: "POST",
                     credentials: "include",
                     body: formData,
                 });
@@ -451,7 +449,7 @@ const addCollegeHeader = (doc) => {
         if (newEvent.rulebook) formData.append('rulebook', newEvent.rulebook);
     
         try {
-            const response = await fetch('http://localhost:8080/api/events/create', {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/events/create`, {
                 method: 'POST',
                 body: formData,
                 credentials: 'include',
@@ -482,7 +480,7 @@ const addCollegeHeader = (doc) => {
     // Function to fetch latest events
     const fetchEvents = async () => {
         try {
-            const res = await fetch('http://localhost:8080/api/events');
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/events`);
             const data = await res.json();
             setEvents(data);
         } catch (error) {
@@ -492,7 +490,7 @@ const addCollegeHeader = (doc) => {
     
     const handleDeleteEvent = async (eventId) => {
         try {
-            const response = await fetch(`http://localhost:8080/api/events/${eventId}`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/events/${eventId}`, { 
                 method: 'DELETE',
                 credentials: 'include',  // Ensures HTTP-only cookie is sent
             });
@@ -543,7 +541,8 @@ const addCollegeHeader = (doc) => {
                 formData.append('rulebook', newEvent.rulebook);
             }
     
-            const response = await fetch(`http://localhost:8080/api/events/edit/${editingEvent.id}`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/events/edit/${editingEvent.id}`, {
+                
                 method: 'PUT',
                 body: formData,
                 credentials: 'include',
@@ -551,8 +550,8 @@ const addCollegeHeader = (doc) => {
     
             if (response.ok) {
                 // Fetch latest event list from server after successful update
-                fetch("http://localhost:8080/api/events")
-                    .then(response => response.json())
+                fetch(`${process.env.REACT_APP_API_URL}/api/events`)
+                .then(response => response.json())
                     .then(data => setEvents(data))
                     .catch(error => console.error("Error fetching updated events:", error));
     
@@ -662,7 +661,7 @@ const addCollegeHeader = (doc) => {
     Priyadarshini J. L. College of Engineering`;
     
         try {
-            const response = await fetch(`http://localhost:8080/api/email/send-to-student/${studentId}`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/email/send-to-student/${studentId}`, { 
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 credentials: "include",  // <-- Add this line to include cookies
@@ -704,7 +703,7 @@ const addCollegeHeader = (doc) => {
     Priyadarshini J. L. College of Engineering`;
     
         try {
-            const response = await fetch(`http://localhost:8080/api/email/send-to-team/${teamId}`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/email/send-to-team/${teamId}`, { 
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 credentials: "include",  // <-- Add this line to include cookies
@@ -739,7 +738,7 @@ const addCollegeHeader = (doc) => {
             formData.append("subject", subject);
             formData.append("body", body);
     
-            const response = await fetch("http://localhost:8080/api/email/send-to-all", {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/email/send-to-all`, { 
                 method: "POST",
                 body: formData,
                 credentials: "include",  // Include cookies with the request (for authentication)
