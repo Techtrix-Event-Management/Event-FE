@@ -6,6 +6,7 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import html2canvas from "html2canvas";
+import * as XLSX from "xlsx";
 
 const AdminDashboard = () => {
     const [events, setEvents] = useState([]);
@@ -50,6 +51,8 @@ const AdminDashboard = () => {
     const toggleForm = () => {
         setIsVisible(!isVisible);
     };
+    const [downloadFormat, setDownloadFormat] = useState("pdf");
+
    
     useEffect(() => {
         if (showEvents) {
@@ -388,6 +391,79 @@ const addCollegeHeader = (doc) => {
 
     };
 
+    // ✅ Generate Excel for Solo Participants
+    const generateSoloExcel = (studentsList, eventName = "Unknown Event") => {
+        const wsData = [
+            ["Name", "Email", "Verified", "College", "Phone", "Payment Method", "UTR Number", "Receipt No", "Payment Image"]
+        ];
+
+        studentsList.forEach(student => {
+            wsData.push([
+                student.name,
+                student.email,
+                student.status === "verified" ? "Yes" : "No",
+                student.college,
+                student.number,
+                student.paymentMethod,
+                student.utrNumber || "N/A",
+                student.receiptNumber || "N/A",
+                student.paymentImage ? "Available" : "No"
+            ]);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(wsData);  // Converts array to sheet
+        const wb = XLSX.utils.book_new();  // Creates a new workbook
+        XLSX.utils.book_append_sheet(wb, ws, eventName);  // Append sheet to workbook
+        
+        const safeEventName = eventName.replace(/[^a-zA-Z0-9-_]/g, "_");
+        XLSX.writeFile(wb, `${safeEventName}_Solo_Participants.xlsx`);
+    };
+    
+
+    // ✅ Generate Excel for Teams
+const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
+    const wsData = [
+        ["Team Name", "Leader Name", "Leader College", "Leader Phone", "Leader Email", "Leader Payment", "Leader UTR No", "Leader Receipt No", "Leader Payment Image", "Leader Status", "Member Name", "Member College", "Member Phone", "Member Email"]
+    ];
+
+    teamsList.forEach(team => {
+        // Leader Row
+        const leaderRow = [
+            team.teamName,
+            team.leaderName || "",
+            team.leaderCollege || "",
+            team.leaderNumber || "",
+            team.leaderEmail || "",
+            team.paymentMethod || "",
+            team.utrNumber || "N/A",
+            team.receiptNumber || "N/A",
+            team.paymentImage ? "Available" : "No",
+            team.status || ""
+        ];
+
+        // Add leader row with empty member columns
+        wsData.push([...leaderRow, "", "", "", ""]);
+
+        // Add member rows
+        team.members.forEach(member => {
+            wsData.push([
+                "", "", "", "", "", "", "", "", "", "",
+                member.name || "",
+                member.college || "",
+                member.number || "",
+                member.email || ""
+            ]);
+        });
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);  // Converts array to sheet
+    const wb = XLSX.utils.book_new();  // Creates a new workbook
+    XLSX.utils.book_append_sheet(wb, ws, eventName);  // Append sheet to workbook
+    
+    const safeEventName = eventName.replace(/[^a-zA-Z0-9-_]/g, "_");
+    XLSX.writeFile(wb, `${safeEventName}_Teams_Participants.xlsx`);
+};
+
     useEffect(() => {
         if (showForm) {
           document.body.classList.add("modal-open");
@@ -443,8 +519,11 @@ const addCollegeHeader = (doc) => {
         formData.append('isTeamParticipation', newEvent.isTeamParticipation.toString());
     
         if (newEvent.isTeamParticipation) {
-            formData.append('maxTeamSize', newEvent.maxTeamSize);
+            // Ensure the minimum team size is at least 1 (leader only)
+            const teamSize = Math.max(1, newEvent.maxTeamSize);  
+            formData.append('maxTeamSize', teamSize);
         }
+        
         if (newEvent.image) formData.append('image', newEvent.image);
         if (newEvent.rulebook) formData.append('rulebook', newEvent.rulebook);
     
@@ -459,13 +538,13 @@ const addCollegeHeader = (doc) => {
                 const errorText = await response.text();
                 console.error('Server Error:', errorText);
             } else {
-                // Fetch updated events instead of manually updating state
-                fetchEvents();  
+                fetchEvents();
                 setNewEvent({
                     eventName: '',
                     description: '',
                     registrationOpen: true,
                     isTeamParticipation: false,
+                    maxTeamSize: "",
                     image: null,
                     rulebook: null
                 });
@@ -476,6 +555,7 @@ const addCollegeHeader = (doc) => {
             console.error('Error adding event:', error);
         }
     };
+    
     
     // Function to fetch latest events
     const fetchEvents = async () => {
@@ -600,32 +680,57 @@ const addCollegeHeader = (doc) => {
         setShowForm(true); // Show form on clicking "Create Event"
       };
     
+      // Function to handle download format change
+    const handleDownloadFormat = (e) => {
+        setDownloadFormat(e.target.value);
+    };
       
+        // ✅ Download All Solo Participants
     const downloadAllSolo = () => {
         if (filter === "all" && soloStudents) {
-            generateSoloPDF(soloStudents, selectedEvent?.eventName || "No Event");
+            if (downloadFormat === "pdf") {
+                generateSoloPDF(soloStudents, selectedEvent?.eventName || "No Event");
+            } else {
+                generateSoloExcel(soloStudents, selectedEvent?.eventName || "No Event");
+            }
         }
     };
 
+    // ✅ Download All Teams
     const downloadAllTeams = () => {
         if (filter === "all" && teams) {
-            generateTeamPDF(teams, selectedEvent?.eventName || "No Event");
+            if (downloadFormat === "pdf") {
+                generateTeamPDF(teams, selectedEvent?.eventName || "No Event");
+            } else {
+                generateTeamExcel(teams, selectedEvent?.eventName || "No Event");
+            }
         }
     };
 
+    // ✅ Download Verified Solo Participants
     const downloadVerifiedSolo = () => {
         if (filter === "verified" && soloStudents) {
             const verifiedStudents = soloStudents.filter(student => student.status === "verified");
-            generateSoloPDF(verifiedStudents, selectedEvent?.eventName || "No Event");
+            if (downloadFormat === "pdf") {
+                generateSoloPDF(verifiedStudents, selectedEvent?.eventName || "No Event");
+            } else {
+                generateSoloExcel(verifiedStudents, selectedEvent?.eventName || "No Event");
+            }
         }
     };
 
+    // ✅ Download Verified Teams
     const downloadVerifiedTeams = () => {
         if (filter === "verified" && teams) {
             const verifiedTeams = teams.filter(team => team.status === "verified");
-            generateTeamPDF(verifiedTeams, selectedEvent?.eventName || "No Event");
+            if (downloadFormat === "pdf") {
+                generateTeamPDF(verifiedTeams, selectedEvent?.eventName || "No Event");
+            } else {
+                generateTeamExcel(verifiedTeams, selectedEvent?.eventName || "No Event");
+            }
         }
     };
+
 
     const filteredSoloStudents = soloStudents.filter(student => {
         return (
@@ -649,7 +754,7 @@ const addCollegeHeader = (doc) => {
     
     Greetings from the TECHTRIX 2025 Team!
     
-    We are pleased to inform you that you have successfully registered for ${eventName}, the National Level Technical Fest organized by the Department of Computer Science & Engineering and Artificial Intelligence, Priyadarshini J. L. College of Engineering.
+    We are pleased to inform you that you have successfully registered for ${eventName}, the Technical Fest organized by the Department of Computer Science & Engineering and Artificial Intelligence, Priyadarshini J. L. College of Engineering.
     
     Further updates or changes regarding the event will be communicated via email or through our official website.
     
@@ -979,17 +1084,17 @@ const addCollegeHeader = (doc) => {
                                             </label>
 
                                             {newEvent.isTeamParticipation && (
-                                                <input
+                                            <input
                                                 type="number"
                                                 name="maxTeamSize"
-                                                placeholder="Max Team Size"
+                                                placeholder="Enter Team Size (1 to max)"
                                                 value={newEvent.maxTeamSize || ""}
                                                 onChange={handleInputChange}
-                                                required
-                                                min="2"
+                                                min="1"  // Ensure minimum 1 participant (leader only)
                                                 className="event-input"
-                                                />
-                                            )}
+                                            />
+                                        )}
+
 
                                             <button onClick={() => setNewEvent({ ...newEvent, registrationOpen: !newEvent.registrationOpen })} className={`toggle-btn ${newEvent.registrationOpen ? "open" : "close"}`}>
                                                 {newEvent.registrationOpen ? "Close Registration" : "Open Registration"}
@@ -1197,6 +1302,10 @@ const addCollegeHeader = (doc) => {
                     <div className="download-buttons">
                         {soloStudents.length > 0 && teams.length === 0 && (
                             <>
+                                <select onChange={handleDownloadFormat} value={downloadFormat}>
+                                    <option value="pdf">Download as PDF</option>
+                                    <option value="excel">Download as Excel</option>
+                                </select>
                                 <button onClick={downloadAllSolo} disabled={filter !== "all"}>Download All</button>
                                 <button onClick={downloadVerifiedSolo} disabled={filter !== "verified"}>Download Verified</button>
                             </>
@@ -1204,11 +1313,16 @@ const addCollegeHeader = (doc) => {
 
                         {teams.length > 0 && soloStudents.length === 0 && (
                             <>
+                                <select onChange={handleDownloadFormat} value={downloadFormat}>
+                                    <option value="pdf">Download as PDF</option>
+                                    <option value="excel">Download as Excel</option>
+                                </select>
                                 <button onClick={downloadAllTeams} disabled={filter !== "all"}>Download All</button>
                                 <button onClick={downloadVerifiedTeams} disabled={filter !== "verified"}>Download Verified</button>
                             </>
                         )}
                     </div>
+
 
                 </div>
             )}

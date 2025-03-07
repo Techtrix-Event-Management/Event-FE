@@ -146,10 +146,10 @@ const TeamEvent = () => {
               </div>
               {formData.teamMembers.map((member, index) => (
                 <div key={index} className="team-member">
-                  <input type="text" placeholder="Member Name" required value={member.name} onChange={(e) => handleMemberChange(index, "name", e.target.value)} />
-                  <input type="text" placeholder="College" required value={member.college} onChange={(e) => handleMemberChange(index, "college", e.target.value)} />
-                  <input type="tel" placeholder="Contact" required pattern="[0-9]{10}" value={member.number} onChange={(e) => handleMemberChange(index, "number", e.target.value)} />
-                  <input type="email" placeholder="Email" required value={member.email} onChange={(e) => handleMemberChange(index, "email", e.target.value)} />
+                  <input type="text" placeholder="Member Name"  value={member.name} onChange={(e) => handleMemberChange(index, "name", e.target.value)} />
+                  <input type="text" placeholder="College"  value={member.college} onChange={(e) => handleMemberChange(index, "college", e.target.value)} />
+                  <input type="tel" placeholder="Contact"  pattern="[0-9]{10}" value={member.number} onChange={(e) => handleMemberChange(index, "number", e.target.value)} />
+                  <input type="email" placeholder="Email"  value={member.email} onChange={(e) => handleMemberChange(index, "email", e.target.value)} />
                 </div>
               ))}
               <div>

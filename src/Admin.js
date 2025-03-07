@@ -92,12 +92,6 @@ function Admin() {
           </button>
         </form>
 
-
-         {/* Test Signup Button */}
-         <button onClick={handleSignup} className="signup-btn">
-            Test Signup
-          </button>
-
       </div>
     </div>
     </div>
