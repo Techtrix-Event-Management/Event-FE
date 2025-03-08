@@ -177,6 +177,8 @@ table tr:nth-child(even) {
 }
 
 .event-form-container {
+        max-height: 80vh; 
+    overflow-y: auto;
   display: block;
     position: fixed;
     top: 50%;
