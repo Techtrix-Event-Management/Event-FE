@@ -69,6 +69,9 @@ function Admin() {
             <label>Email:</label>
             <input 
               type="email" 
+   style={{
+                width :"100%"
+              }} 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               required 
@@ -79,6 +82,9 @@ function Admin() {
             <label>Password:</label>
             <input 
               type="password" 
+ style={{
+                width :"100%"
+              }} 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
               required 
