@@ -122,10 +122,13 @@ const Home = () => {
         </div>
 
         <div className="text-container">
-          <h2 className="techtrix-title">TechTrix 2K25</h2>
-          <p className="techtrix-subtitle" >
-         Computer Science Engineering & Artificial Intelligence   </p>
-        </div>
+  <h2 className="techtrix-title"> TechTrix 2K25 </h2>
+  <p className="techtrix-subtitle">
+    Presented by <strong>Computer Science & Engineering</strong> and <strong>Artificial Intelligence</strong>  
+  </p>
+  <p className="techtrix-tagline">Unleash Innovation, Ignite Intelligence, Shape the Future! 
+  </p>
+</div>
       </section>
 
       
