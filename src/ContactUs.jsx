@@ -12,7 +12,7 @@ const ContactUs = () => {
     events: [],
   });
 
-  const eventsList = ["Hackathon", "Workshop", "Webinar", "Tech Talk"];
+  const eventsList = ["Engineer's Got Latent", "Recruit Rush", "Orator's Arena", "Code Hack","LUDO (Warrior's Legacy)","BGMI (Warrior's Legacy) ","FreeFire (Warrior's Legacy) "];
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

@@ -2,7 +2,6 @@
 .admin-dashboard {
     font-family: Arial, sans-serif;
     padding: 20px;
-    background-color: transparent;
 }
 
 .admin-heading {
@@ -178,6 +177,8 @@ table tr:nth-child(even) {
 }
 
 .event-form-container {
+        max-height: 80vh; 
+    overflow-y: auto;
   display: block;
     position: fixed;
     top: 50%;

@@ -81,7 +81,7 @@ const Navbar = () => {
         <li><Link to="/">Home</Link></li>
         <li><Link to="/about">About</Link></li>
         <li><Link to="/contact">Contact</Link></li>
-        <li><Link to="/sponser">Sponser</Link></li>
+        <li><Link to="/sponser">Sponsor</Link></li>
         {adminEmail ? (
           <li className="admin-dropdown">
             
