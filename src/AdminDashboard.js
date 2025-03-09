@@ -11,7 +11,7 @@ import * as XLSX from "xlsx";
 const AdminDashboard = () => {
     const [events, setEvents] = useState([]);
     
-    const [newEvent, setNewEvent] = useState({ eventName: '', description: '', registrationOpen: true, isTeamParticipation: false, maxTeamSize: '', image: null, rulebook: null});
+    const [newEvent, setNewEvent] = useState({ eventName: '', description: '', registrationOpen: true, isTeamParticipation: false,maxAllowedParticipants:'', maxTeamSize: '', image: null, rulebook: null});
     const [editingEvent, setEditingEvent] = useState(null);
     const [showForm, setShowForm] = useState(false); // State to show/hide form
     const [showStudents, setShowStudents] = useState(false);
@@ -52,47 +52,258 @@ const AdminDashboard = () => {
         setIsVisible(!isVisible);
     };
     const [downloadFormat, setDownloadFormat] = useState("pdf");
+    const [currentPage, setCurrentPage] = useState(0); // Track current page
+    const [totalPages, setTotalPages] = useState(0); // Track total pages
+    const [totalParticipants, setTotalParticipants] = useState(0);
+    const [maxAllowedParticipants, setMaxAllowedParticipants] = useState(0);
 
-   
+
     useEffect(() => {
         if (showEvents) {
             fetch(`${process.env.REACT_APP_API_URL}/api/events`)                .then(response => response.json())
                 .then(data => setEvents(data))
                 .catch(error => console.error("Error fetching events:", error));
+                
         }
+
     }, [showEvents]);
 
-    const fetchStudents = (event) => {
-        setStudents(null);
+    useEffect(() => {
+        console.log("Selected Event:", selectedEvent);
+        if (selectedEvent) {
+            fetchStudents(selectedEvent);
+        }
+    }, [selectedEvent]);
+    
+    
+    useEffect(() => {
+        console.log("Updated Solo Students State:", soloStudents);
+    }, [soloStudents]);
+    
+    useEffect(() => {
+        console.log("Updated Teams State:", teams);
+    }, [teams]);
+    
+
+    const fetchAllStudents = async (eventId) => {
+        try {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/${eventId}/students/all/download`, {
+                method: "GET",
+                credentials: "include",
+            });
+            if (!response.ok) throw new Error("Failed to fetch all students");
+            return await response.json();
+        } catch (error) {
+            console.error("Error fetching all students:", error);
+        }
+    };
+    
+    const fetchVerifiedStudents = async (eventId) => {
+        try {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/${eventId}/students/verified/download`, {
+                method: "GET",
+                credentials: "include",
+            });
+            if (!response.ok) throw new Error("Failed to fetch verified students");
+            return await response.json();
+        } catch (error) {
+            console.error("Error fetching verified students:", error);
+        }
+    };
+    
+    const fetchAllTeams = async (eventId) => {
+        try {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/${eventId}/teams/all/download`, {
+                method: "GET",
+                credentials: "include",
+            });
+            if (!response.ok) throw new Error("Failed to fetch all teams");
+            return await response.json();
+        } catch (error) {
+            console.error("Error fetching all teams:", error);
+        }
+    };
+    
+    const fetchVerifiedTeams = async (eventId) => {
+        try {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/${eventId}/teams/verified/download`, {
+                method: "GET",
+                credentials: "include",
+            });
+            if (!response.ok) throw new Error("Failed to fetch verified teams");
+            return await response.json();
+        } catch (error) {
+            console.error("Error fetching verified teams:", error);
+        }
+    };
+    
+    const downloadAllSolo = async () => {
+        if (filter === "all" && selectedEvent) {
+            const students = await fetchAllStudents(selectedEvent.id);
+            if (students) {
+                if (downloadFormat === "pdf") {
+                    generateSoloPDF(students, selectedEvent?.eventName || "No Event");
+                } else {
+                    generateSoloExcel(students, selectedEvent?.eventName || "No Event");
+                }
+            }
+        }
+    };
+    
+    const downloadVerifiedSolo = async () => {
+        if (filter === "verified" && selectedEvent) {
+            const students = await fetchVerifiedStudents(selectedEvent.id);
+            if (students) {
+                if (downloadFormat === "pdf") {
+                    generateSoloPDF(students, selectedEvent?.eventName || "No Event");
+                } else {
+                    generateSoloExcel(students, selectedEvent?.eventName || "No Event");
+                }
+            }
+        }
+    };
+    
+    const downloadAllTeams = async () => {
+        if (filter === "all" && selectedEvent) {
+            const teams = await fetchAllTeams(selectedEvent.id);
+            if (teams) {
+                if (downloadFormat === "pdf") {
+                    generateTeamPDF(teams, selectedEvent?.eventName || "No Event");
+                } else {
+                    generateTeamExcel(teams, selectedEvent?.eventName || "No Event");
+                }
+            }
+        }
+    };
+    
+    const downloadVerifiedTeams = async () => {
+        if (filter === "verified" && selectedEvent) {
+            const teams = await fetchVerifiedTeams(selectedEvent.id);
+            if (teams) {
+                if (downloadFormat === "pdf") {
+                    generateTeamPDF(teams, selectedEvent?.eventName || "No Event");
+                } else {
+                    generateTeamExcel(teams, selectedEvent?.eventName || "No Event");
+                }
+            }
+        }
+    };
+    
+    const handleStudentTeamFilterChange = async (newFilter) => {
+        setFilter(newFilter);
+        
+        if (selectedEvent?.id) {
+            if (selectedEvent.isTeamParticipation) {
+                if (newFilter === "verified") {
+                    await fetchVerifiedTeams(selectedEvent.id);
+                } else {
+                    await fetchAllTeams(selectedEvent.id);
+                }
+            } else {
+                if (newFilter === "verified") {
+                    await fetchVerifiedStudents(selectedEvent.id);
+                } else {
+                    await fetchAllStudents(selectedEvent.id);
+                }
+            }
+        }
+    };
+    
+    const fetchStudents = async (event, page = 0, statusFilter = "all") => {
+        if (!event) return;
+        
         setSelectedEvent(event);
-        setSoloStudents([]); // Clear previous data
-        setTeams([]);
+        setLoading(true);
     
-        const url = event.isTeamParticipation 
-        ? `${process.env.REACT_APP_API_URL}/api/auth/${event.id}/teams`
-        : `${process.env.REACT_APP_API_URL}/api/auth/${event.id}/registered-students`;
+        const baseUrl = `${process.env.REACT_APP_API_URL}/api/auth/${event.id}`;
+        let url = `${baseUrl}/students/all?page=${page}&size=10`;
     
-        fetch(url, {
-            method: "GET",
-            credentials: "include", // Ensures HTTP-only cookies are sent
-        })
-        .then(response => {
+        if (event.isTeamParticipation) {
+            url = statusFilter === "verified"
+                ? `${baseUrl}/teams/verified?page=${page}&size=10`
+                : statusFilter === "notVerified"
+                ? `${baseUrl}/teams/not-verified?page=${page}&size=10`
+                : `${baseUrl}/teams/all?page=${page}&size=10`;
+        } else {
+            url = statusFilter === "verified"
+                ? `${baseUrl}/students/verified?page=${page}&size=10`
+                : statusFilter === "notVerified"
+                ? `${baseUrl}/students/not-verified?page=${page}&size=10`
+                : `${baseUrl}/students/all?page=${page}&size=10`;
+        }
+    
+        console.log("Fetching URL:", url);
+    
+        try {
+            const response = await fetch(url, {
+                method: "GET",
+                credentials: "include",
+            });
+    
             if (!response.ok) {
                 throw new Error("Failed to fetch students");
             }
-            return response.json();
-        })
-        .then(data => {
-            setStudents(data);
+    
+            const data = await response.json();
+            // Extract pagination details
+            setTotalPages(data.page?.totalPages || 0);
+    
+            // Correctly update state based on event type
             if (event.isTeamParticipation) {
-                setTeams(data); // Set teams if event has team participation
+                const fetchedTeams = data._embedded?.teamList || [];
+                setTeams(fetchedTeams);
             } else {
-                setSoloStudents(data); // Set solo students if event is individual
+                const fetchedSoloStudents = data._embedded?.registeredStudentList || [];
+                setSoloStudents(fetchedSoloStudents);
             }
-        })
-        .catch(error => console.error("Error fetching students:", error));
+        } catch (error) {
+            console.error("Error fetching students:", error);
+        } finally {
+            setLoading(false);
+        }
     };
     
+    
+    
+    const handleFilterChange = (newFilter) => {
+        setFilter(newFilter);
+        fetchStudents(selectedEvent, 0, newFilter);
+    };
+
+    const handlePageChange = (page) => {
+        if (page >= 0 && page < totalPages) {
+            setCurrentPage(page);
+            fetchStudents(selectedEvent, page, filter);
+        }
+    };
+    
+    const handleNextPage = () => {
+        if (currentPage < totalPages - 1) {
+            handlePageChange(currentPage + 1);
+        }
+    };
+    
+    const handlePreviousPage = () => {
+        if (currentPage > 0) {
+            handlePageChange(currentPage - 1);
+        }
+    };
+    
+    const filteredSoloStudents = (soloStudents || []).filter(student => {
+        return (
+            student.name?.toLowerCase().includes(studentSearchQuery.toLowerCase()) &&
+            (filter === "all" || (filter === "verified" && student.status === "verified") || (filter === "notVerified" && student.status !== "verified"))
+        );
+    });
+    
+    const filteredTeams = (teams || []).filter(team => {
+        return (
+            team.teamName?.toLowerCase().includes(teamSearchQuery.toLowerCase()) &&
+            (filter === "all" || (filter === "verified" && team.status === "verified") || (filter === "notVerified" && team.status !== "verified"))
+        );
+    });
+    
+
     const API_BASE_URL = `${process.env.REACT_APP_API_URL}/api/sponsors`;
     useEffect(() => {
         fetchSponsors();
@@ -298,8 +509,9 @@ const addCollegeHeader = (doc) => {
         // Define table
         doc.autoTable({
             startY: 70,
-            head: [["Name", "Email", "Verified", "College", "Phone", "Payment Method", "UTR Number", "Receipt No", "Payment Image"]],
-            body: studentsList.map(student => [
+            head: [["#","Name", "Email", "Verified", "College", "Phone", "Payment Method", "UTR Number", "Receipt No", "Payment Image","Registration Date"]],
+            body: studentsList.map((student, index) => [
+                index+1,
                 student.name,
                 student.email,
                 student.status === "verified" ? "Yes" : "No",
@@ -308,10 +520,15 @@ const addCollegeHeader = (doc) => {
                 student.paymentMethod,
                 student.utrNumber || "N/A",
                 student.receiptNumber || "N/A",
-                student.paymentImage ? "Available" : "No"
+                student.paymentImage ? "Available" : "No",
+                student.formattedRegistrationDate || "N/A" ,
             ]),
             styles: { fontSize: 9 },
-            theme: "grid", // Adds vertical and horizontal lines
+            theme: "grid", 
+            columnStyles: {
+                2: { cellWidth: 20 }, // Reduce Email column width
+                4: { cellWidth: 30 }  // Increase College column width
+            }
         });
 
         const safeEventName = eventName.replace(/[^a-zA-Z0-9-_]/g, "_");
@@ -332,14 +549,15 @@ const addCollegeHeader = (doc) => {
 
         teamsList.forEach((team, index) => {
             doc.setFontSize(12);
-            doc.text(`Team: ${team.teamName}`, 10, startY);
+            doc.text(`Team ${index + 1}: ${team.teamName}`, 10, startY);
             doc.setFontSize(10);
 
             // ✅ Leader Details Table
             doc.autoTable({
                 startY: startY + 5,
-                head: [["Leader Name", "College", "Phone", "Email", "Payment", "UTR No", "Receipt No", "Payment Image", "Status"]],
+                head: [["#","Leader Name", "College", "Phone", "Email", "Payment", "UTR No", "Receipt No", "Payment Image", "Status", "Registration Date"]],
                 body: [[
+                    index+1,
                     team.leaderName || "",
                     team.leaderCollege || "",
                     team.leaderNumber || "",
@@ -348,10 +566,15 @@ const addCollegeHeader = (doc) => {
                     team.utrNumber || "N/A",
                     team.receiptNumber || "N/A",
                     team.paymentImage ? "Available" : "No",
-                    team.status || ""
+                    team.status || "",
+                    team.formattedRegistrationDate || "N/A" 
                 ]],
                 styles: { fontSize: 9 },
-                theme: "grid"
+                theme: "grid",
+                columnStyles: {
+                    4: { cellWidth: 20 }, // Reduce Email column width
+                    2: { cellWidth: 30 }  // Increase College column width
+                }
             });
 
             // ✅ Ensure `finalY` is defined correctly
@@ -362,8 +585,9 @@ const addCollegeHeader = (doc) => {
             if (team.members.length > 0) {
                 doc.autoTable({
                     startY: finalY + 5,
-                    head: [["Member Name", "College", "Phone", "Email"]],
-                    body: team.members.map(member => [
+                    head: [[ "#","Member Name", "College", "Phone", "Email"]],
+                    body: team.members.map((member, memberIndex) => [
+                        memberIndex + 1,
                         member.name || "",
                         member.college || "",
                         member.number || "",
@@ -392,43 +616,43 @@ const addCollegeHeader = (doc) => {
     };
 
     // ✅ Generate Excel for Solo Participants
-    const generateSoloExcel = (studentsList, eventName = "Unknown Event") => {
-        const wsData = [
-            ["Name", "Email", "Verified", "College", "Phone", "Payment Method", "UTR Number", "Receipt No", "Payment Image"]
-        ];
+const generateSoloExcel = (studentsList, eventName = "Unknown Event") => {
+    const wsData = [
+        ["Name", "Email", "Verified", "College", "Phone", "Payment Method", "UTR Number", "Receipt No", "Payment Image", "Registration Date"]
+    ];
 
-        studentsList.forEach(student => {
-            wsData.push([
-                student.name,
-                student.email,
-                student.status === "verified" ? "Yes" : "No",
-                student.college,
-                student.number,
-                student.paymentMethod,
-                student.utrNumber || "N/A",
-                student.receiptNumber || "N/A",
-                student.paymentImage ? "Available" : "No"
-            ]);
-        });
+    studentsList.forEach(student => {
+        wsData.push([
+            student.name,
+            student.email,
+            student.status === "verified" ? "Yes" : "No",
+            student.college,
+            student.number,
+            student.paymentMethod,
+            student.utrNumber || "N/A",
+            student.receiptNumber || "N/A",
+            student.paymentImage ? "Available" : "No",
+            student.formattedRegistrationDate || "N/A"
+        ]);
+    });
 
-        const ws = XLSX.utils.aoa_to_sheet(wsData);  // Converts array to sheet
-        const wb = XLSX.utils.book_new();  // Creates a new workbook
-        XLSX.utils.book_append_sheet(wb, ws, eventName);  // Append sheet to workbook
-        
-        const safeEventName = eventName.replace(/[^a-zA-Z0-9-_]/g, "_");
-        XLSX.writeFile(wb, `${safeEventName}_Solo_Participants.xlsx`);
-    };
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, eventName);
     
+    const safeEventName = eventName.replace(/[^a-zA-Z0-9-_]/g, "_");
+    XLSX.writeFile(wb, `${safeEventName}_Solo_Participants.xlsx`);
+};
 
     // ✅ Generate Excel for Teams
 const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
     const wsData = [
-        ["Team Name", "Leader Name", "Leader College", "Leader Phone", "Leader Email", "Leader Payment", "Leader UTR No", "Leader Receipt No", "Leader Payment Image", "Leader Status", "Member Name", "Member College", "Member Phone", "Member Email"]
+        ["Team Name", "Name", "College", "Phone", "Email", "Payment Method", "UTR No", "Receipt No", "Payment Image", "Status", "Registration Date"]
     ];
 
     teamsList.forEach(team => {
         // Leader Row
-        const leaderRow = [
+        wsData.push([
             team.teamName,
             team.leaderName || "",
             team.leaderCollege || "",
@@ -438,31 +662,35 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
             team.utrNumber || "N/A",
             team.receiptNumber || "N/A",
             team.paymentImage ? "Available" : "No",
-            team.status || ""
-        ];
+            team.status || "",
+            team.formattedRegistrationDate || "N/A"
+        ]);
 
-        // Add leader row with empty member columns
-        wsData.push([...leaderRow, "", "", "", ""]);
-
-        // Add member rows
+        // Member Rows (aligned under the same columns as the leader)
         team.members.forEach(member => {
             wsData.push([
-                "", "", "", "", "", "", "", "", "", "",
+                "Team Member", // Instead of an empty team name
                 member.name || "",
                 member.college || "",
                 member.number || "",
-                member.email || ""
+                member.email || "",
+                "", "", "", "", "", // Empty fields for payment/status details
+                member.formattedRegistrationDate || "N/A"
             ]);
         });
+
+        // Add a separator row to visually separate teams
+        wsData.push(["----------", "", "", "", "", "", "", "", "", "", ""]);
     });
 
-    const ws = XLSX.utils.aoa_to_sheet(wsData);  // Converts array to sheet
-    const wb = XLSX.utils.book_new();  // Creates a new workbook
-    XLSX.utils.book_append_sheet(wb, ws, eventName);  // Append sheet to workbook
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, eventName);
     
     const safeEventName = eventName.replace(/[^a-zA-Z0-9-_]/g, "_");
     XLSX.writeFile(wb, `${safeEventName}_Teams_Participants.xlsx`);
 };
+
 
     useEffect(() => {
         if (showForm) {
@@ -513,46 +741,117 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
     const handleAddEvent = async (e) => {
         e.preventDefault();
         const formData = new FormData();
-        formData.append('eventName', newEvent.eventName);
-        formData.append('description', newEvent.description);
-        formData.append('registrationOpen', newEvent.registrationOpen.toString());
-        formData.append('isTeamParticipation', newEvent.isTeamParticipation.toString());
+        formData.append("eventName", newEvent.eventName);
+        formData.append("description", newEvent.description);
+        formData.append("registrationOpen", newEvent.registrationOpen.toString());
+        formData.append("isTeamParticipation", newEvent.isTeamParticipation.toString());
     
         if (newEvent.isTeamParticipation) {
-            // Ensure the minimum team size is at least 1 (leader only)
-            const teamSize = Math.max(1, newEvent.maxTeamSize);  
-            formData.append('maxTeamSize', teamSize);
+            const teamSize = Math.max(1, Number(newEvent.maxTeamSize) || 1);
+            const maxParticipants = Math.max(1, Number(newEvent.maxAllowedParticipants) || teamSize);
+            formData.append("maxTeamSize", teamSize);
+            formData.append("maxAllowedParticipants", maxParticipants);
         }
-        
-        if (newEvent.image) formData.append('image', newEvent.image);
-        if (newEvent.rulebook) formData.append('rulebook', newEvent.rulebook);
+    
+        if (newEvent.image) formData.append("image", newEvent.image);
+        if (newEvent.rulebook) formData.append("rulebook", newEvent.rulebook);
     
         try {
             const response = await fetch(`${process.env.REACT_APP_API_URL}/api/events/create`, {
-                method: 'POST',
+                method: "POST",
                 body: formData,
-                credentials: 'include',
+                credentials: "include",
             });
     
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('Server Error:', errorText);
+                console.error("Server Error:", errorText);
             } else {
                 fetchEvents();
                 setNewEvent({
-                    eventName: '',
-                    description: '',
+                    eventName: "",
+                    description: "",
                     registrationOpen: true,
                     isTeamParticipation: false,
                     maxTeamSize: "",
+                    maxAllowedParticipants: "",
                     image: null,
-                    rulebook: null
+                    rulebook: null,
                 });
                 setShowForm(false);
                 handleCloseForm();
             }
         } catch (error) {
-            console.error('Error adding event:', error);
+            console.error("Error adding event:", error);
+        }
+    };
+    
+    const handleEditEvent = (event) => {
+        setEditingEvent(event);
+        setNewEvent({
+            eventName: event.eventName,
+            description: event.description,
+            registrationOpen: event.registrationOpen ?? false,
+            isTeamParticipation: event.isTeamParticipation ?? false,
+            maxTeamSize: event.maxTeamSize ?? "",
+            maxAllowedParticipants: event.maxAllowedParticipants ?? "",
+            image: event.image || null,
+            rulebook: event.rulebook || null,
+        });
+        setShowForm(true);
+    };
+    
+    const handleUpdateEvent = async (e) => {
+        e.preventDefault();
+        if (!editingEvent) return;
+    
+        try {
+            const formData = new FormData();
+            formData.append("eventName", newEvent.eventName);
+            formData.append("description", newEvent.description);
+            formData.append("registrationOpen", newEvent.registrationOpen.toString());
+            formData.append("isTeamParticipation", newEvent.isTeamParticipation.toString());
+    
+            if (newEvent.isTeamParticipation) {
+                const teamSize = Math.max(1, Number(newEvent.maxTeamSize) || 1);
+                const maxParticipants = Math.max(1, Number(newEvent.maxAllowedParticipants) || teamSize);
+                formData.append("maxTeamSize", teamSize);
+                formData.append("maxAllowedParticipants", maxParticipants);
+            }
+    
+            if (newEvent.image) formData.append("image", newEvent.image);
+            if (newEvent.rulebook) formData.append("rulebook", newEvent.rulebook);
+    
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/events/edit/${editingEvent.id}`, {
+                method: "PUT",
+                body: formData,
+                credentials: "include",
+            });
+    
+            if (response.ok) {
+                fetch(`${process.env.REACT_APP_API_URL}/api/events`)
+                    .then((res) => res.json())
+                    .then((data) => setEvents(data))
+                    .catch((error) => console.error("Error fetching updated events:", error));
+    
+                setEditingEvent(null);
+                setNewEvent({
+                    eventName: "",
+                    description: "",
+                    registrationOpen: true,
+                    isTeamParticipation: false,
+                    maxTeamSize: "",
+                    maxAllowedParticipants: "",
+                    image: null,
+                    rulebook: null,
+                });
+                setShowForm(false);
+            } else {
+                const errorText = await response.text();
+                console.error("Failed to update event:", errorText);
+            }
+        } catch (error) {
+            console.error("Error updating event:", error);
         }
     };
     
@@ -586,73 +885,7 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
         }
     };
     
-    const handleEditEvent = (event) => {
-        setEditingEvent(event);
-        setNewEvent({
-            eventName: event.eventName,
-            description: event.description,
-            registrationOpen: event.registrationOpen ?? false,
-            isTeamParticipation: event.isTeamParticipation ?? false,
-            maxTeamSize: event.maxTeamSize ?? "",
-            image: event.image || null,  
-            rulebook: event.rulebook || null,  
-        });
-        setShowForm(true);
-    };
     
-    const handleUpdateEvent = async (e) => {
-        e.preventDefault();
-        if (!editingEvent) return;
-    
-        try {
-            const formData = new FormData();
-            formData.append('eventName', newEvent.eventName);
-            formData.append('description', newEvent.description);
-            formData.append('registrationOpen', newEvent.registrationOpen.toString());
-            formData.append('isTeamParticipation', newEvent.isTeamParticipation.toString());
-    
-            if (newEvent.isTeamParticipation && newEvent.maxTeamSize) {
-                formData.append('maxTeamSize', newEvent.maxTeamSize);
-            }
-            if (newEvent.image) {
-                formData.append('image', newEvent.image);
-            }
-            if (newEvent.rulebook) {
-                formData.append('rulebook', newEvent.rulebook);
-            }
-    
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/events/edit/${editingEvent.id}`, {
-                
-                method: 'PUT',
-                body: formData,
-                credentials: 'include',
-            });
-    
-            if (response.ok) {
-                // Fetch latest event list from server after successful update
-                fetch(`${process.env.REACT_APP_API_URL}/api/events`)
-                .then(response => response.json())
-                    .then(data => setEvents(data))
-                    .catch(error => console.error("Error fetching updated events:", error));
-    
-                setEditingEvent(null);
-                setNewEvent({
-                    eventName: '',
-                    description: '',
-                    registrationOpen: true,
-                    isTeamParticipation: false,
-                    image: null,
-                    rulebook: null,
-                });
-                setShowForm(false);
-            } else {
-                const errorText = await response.text();
-                console.error('Failed to update event:', errorText);
-            }
-        } catch (error) {
-            console.error('Error updating event:', error);
-        }
-    };
     
     const handleOpenForm = () => {
         setEditingEvent(null); // Ensure we're in create mode
@@ -685,68 +918,8 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
         setDownloadFormat(e.target.value);
     };
       
-        // ✅ Download All Solo Participants
-    const downloadAllSolo = () => {
-        if (filter === "all" && soloStudents) {
-            if (downloadFormat === "pdf") {
-                generateSoloPDF(soloStudents, selectedEvent?.eventName || "No Event");
-            } else {
-                generateSoloExcel(soloStudents, selectedEvent?.eventName || "No Event");
-            }
-        }
-    };
 
-    // ✅ Download All Teams
-    const downloadAllTeams = () => {
-        if (filter === "all" && teams) {
-            if (downloadFormat === "pdf") {
-                generateTeamPDF(teams, selectedEvent?.eventName || "No Event");
-            } else {
-                generateTeamExcel(teams, selectedEvent?.eventName || "No Event");
-            }
-        }
-    };
-
-    // ✅ Download Verified Solo Participants
-    const downloadVerifiedSolo = () => {
-        if (filter === "verified" && soloStudents) {
-            const verifiedStudents = soloStudents.filter(student => student.status === "verified");
-            if (downloadFormat === "pdf") {
-                generateSoloPDF(verifiedStudents, selectedEvent?.eventName || "No Event");
-            } else {
-                generateSoloExcel(verifiedStudents, selectedEvent?.eventName || "No Event");
-            }
-        }
-    };
-
-    // ✅ Download Verified Teams
-    const downloadVerifiedTeams = () => {
-        if (filter === "verified" && teams) {
-            const verifiedTeams = teams.filter(team => team.status === "verified");
-            if (downloadFormat === "pdf") {
-                generateTeamPDF(verifiedTeams, selectedEvent?.eventName || "No Event");
-            } else {
-                generateTeamExcel(verifiedTeams, selectedEvent?.eventName || "No Event");
-            }
-        }
-    };
-
-
-    const filteredSoloStudents = soloStudents.filter(student => {
-        return (
-            student.name &&
-            student.name.toLowerCase().includes(studentSearchQuery.toLowerCase()) &&
-            (filter === "all" || (filter === "verified" && student.status === "verified") || (filter === "notVerified" && student.status !== "verified"))
-        );
-    });
-
-    const filteredTeams = teams.filter(team => {
-        return (
-            team.teamName &&
-            team.teamName.toLowerCase().includes(teamSearchQuery.toLowerCase()) &&
-            (filter === "all" || (filter === "verified" && team.status === "verified") || (filter === "notVerified" && team.status !== "verified"))
-        );
-    });
+    
 
     const verifyStudent = async (studentId, studentName, eventName) => {
         const subject = `Confirmation of Your Successful Registration for TECHTRIX 2025`;
@@ -862,6 +1035,43 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
         }
     };
     
+    useEffect(() => {
+        const fetchTotalCount = async () => {
+            if (!selectedEvent) {
+                setTotalParticipants(0);
+                return;
+            }
+    
+            try {
+                let soloStudents = [];
+                let teams = [];
+    
+                if (filter === "verified") {
+                    soloStudents = await fetchVerifiedStudents(selectedEvent.id) || [];
+                    teams = await fetchVerifiedTeams(selectedEvent.id) || [];
+                } else if (filter === "notVerified") {
+                    const allSolo = await fetchAllStudents(selectedEvent.id) || [];
+                    const allTeams = await fetchAllTeams(selectedEvent.id) || [];
+    
+                    soloStudents = allSolo.filter(student => student.status !== "verified");
+                    teams = allTeams.filter(team => team.status !== "verified");
+                } else {
+                    soloStudents = await fetchAllStudents(selectedEvent.id) || [];
+                    teams = await fetchAllTeams(selectedEvent.id) || [];
+                }
+    
+                // Count total participants: solo + (leader + members for teams)
+                const teamParticipantsCount = teams.length;
+    
+                setTotalParticipants(soloStudents.length + teamParticipantsCount);
+            } catch (error) {
+                console.error("Error fetching total count:", error);
+                setTotalParticipants(0);
+            }
+        };
+    
+        fetchTotalCount();
+    }, [selectedEvent, filter]);
     
     
     return (
@@ -1019,99 +1229,115 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
             <div>
           
         </div>
-            {showForm && (
-                        <>
-                            <div className="modal-overlay" onClick={handleCloseForm}></div>
+                {showForm && (
+            <>
+                <div className="modal-overlay" onClick={handleCloseForm}></div>
+                <div className="event-form-container">
+                    <h2 className="event-form-title">{editingEvent ? "Edit Event" : "Create Event"}</h2>
+                    <form onSubmit={editingEvent ? handleUpdateEvent : handleAddEvent} className="event-form">
+                        <input
+                            type="text"
+                            name="eventName"
+                            placeholder="Event Name"
+                            value={newEvent.eventName}
+                            onChange={handleInputChange}
+                            required
+                            className="event-input"
+                        />
+                        <textarea
+                            name="description"
+                            placeholder="Event Description"
+                            value={newEvent.description}
+                            onChange={handleInputChange}
+                            required
+                            className="event-textarea"
+                        />
+                        <label className="event-label">Upload Event Image</label>
+                        <input
+                            type="file"
+                            name="image"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            className={`event-file-input ${imagePreview ? "file-valid" : "file-invalid"}`}
+                        />
+                        {imagePreview ? (
+                            <div className="image-preview">
+                                <img src={imagePreview} alt="Preview" className="preview-img" />
+                            </div>
+                        ) : (
+                            <p className="file-warning">No image uploaded</p>
+                        )}
 
-                                <div className="event-form-container">
-                                            <h2 className="event-form-title">{editingEvent ? "Edit Event" : "Create Event"}</h2>
-                                            <form onSubmit={editingEvent ? handleUpdateEvent : handleAddEvent} className="event-form">
-                                            <input
-                                                type="text"
-                                                name="eventName"
-                                                placeholder="Event Name"
-                                                value={newEvent.eventName}
-                                                onChange={handleInputChange}
-                                                required
-                                                className="event-input"
-                                            />
-                                            <textarea
-                                                name="description"
-                                                placeholder="Event Description"
-                                                value={newEvent.description}
-                                                onChange={handleInputChange}
-                                                required
-                                                className="event-textarea"
-                                            />
-                                            <label className="event-label">Upload Event Image</label>
-                                            <input
-                                                type="file"
-                                                name="image"
-                                                accept="image/*"
-                                                onChange={handleFileChange}
-                                                className={`event-file-input ${imagePreview ? "file-valid" : "file-invalid"}`}
-                                            />
-                                            {imagePreview ? (
-                                                <div className="image-preview">
-                                                <img src={imagePreview} alt="Preview" className="preview-img" />
-                                                </div>
-                                            ) : (
-                                                <p className="file-warning">No image uploaded</p>
-                                            )}
+                        <label className="event-label">Upload Rulebook (PDF)</label>
+                        <input
+                            type="file"
+                            name="rulebook"
+                            accept=".pdf"
+                            onChange={handleFileChange}
+                            className={`event-file-input ${pdfFileName ? "file-valid" : "file-invalid"}`}
+                        />
+                        {pdfFileName ? (
+                            <p className="file-success">Uploaded: {pdfFileName}</p>
+                        ) : (
+                            <p className="file-warning">No PDF uploaded</p>
+                        )}
 
-                                            <label className="event-label">Upload Rulebook (PDF)</label>
-                                            <input
-                                                type="file"
-                                                name="rulebook"
-                                                accept=".pdf"
-                                                onChange={handleFileChange}
-                                                className={`event-file-input ${pdfFileName ? "file-valid" : "file-invalid"}`}
-                                            />
-                                            {pdfFileName ? (
-                                                <p className="file-success">Uploaded: {pdfFileName}</p>
-                                            ) : (
-                                                <p className="file-warning">No PDF uploaded</p>
-                                            )}
+                        <label className="checkbox-label">
+                            <input
+                                type="checkbox"
+                                name="isTeamParticipation"
+                                checked={!!newEvent.isTeamParticipation}
+                                onChange={handleInputChange}
+                            />
+                            Team Participation
+                        </label>
 
-                                            <label className="checkbox-label">
-                                                <input
-                                                type="checkbox"
-                                                name="isTeamParticipation"
-                                                checked={!!newEvent.isTeamParticipation}
-                                                onChange={handleInputChange}
-                                                />
-                                                Team Participation
-                                            </label>
+                        {newEvent.isTeamParticipation && (
+                            <>
+                                <input
+                                    type="number"
+                                    name="maxTeamSize"
+                                    placeholder="Enter Team Size (1 to max)"
+                                    value={newEvent.maxTeamSize || ""}
+                                    onChange={handleInputChange}
+                                    min="1"
+                                    className="event-input max-team-size-input"
+                                />
 
-                                            {newEvent.isTeamParticipation && (
-                                            <input
-                                                type="number"
-                                                name="maxTeamSize"
-                                                placeholder="Enter Team Size (1 to max)"
-                                                value={newEvent.maxTeamSize || ""}
-                                                onChange={handleInputChange}
-                                                min="1"  // Ensure minimum 1 participant (leader only)
-                                                className="event-input"
-                                            />
-                                        )}
+                                <input
+                                    type="number"
+                                    name="maxAllowedParticipants"
+                                    placeholder="Max Allowed Participants"
+                                    value={newEvent.maxAllowedParticipants || ""}
+                                    onChange={handleInputChange}
+                                    min="1"
+                                    max={newEvent.maxTeamSize || ""}
+                                    className="event-input max-allowed-participants-input"
+                                />
 
-
-                                            <button onClick={() => setNewEvent({ ...newEvent, registrationOpen: !newEvent.registrationOpen })} className={`toggle-btn ${newEvent.registrationOpen ? "open" : "close"}`}>
-                                                {newEvent.registrationOpen ? "Close Registration" : "Open Registration"}
-                                            </button>
-
-                                            <div className="form-actions">
-                                                <button type="submit" className="submit-btn">
-                                                {editingEvent ? "Update Event" : "Add Event"}
-                                                </button>
-                                                <button type="button" onClick={handleCloseForm} className="close-btn">
-                                                ✖
-                                                </button>
-                                            </div>
-                                        </form>
-                                </div>
                             </>
                         )}
+
+                        <button
+                            onClick={() => setNewEvent({ ...newEvent, registrationOpen: !newEvent.registrationOpen })}
+                            className={`toggle-btn ${newEvent.registrationOpen ? "open" : "close"}`}
+                        >
+                            {newEvent.registrationOpen ? "Close Registration" : "Open Registration"}
+                        </button>
+
+                        <div className="form-actions">
+                            <button type="submit" className="submit-btn">
+                                {editingEvent ? "Update Event" : "Add Event"}
+                            </button>
+                            <button type="button" onClick={handleCloseForm} className="close-btn">
+                                ✖
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </>
+        )}
+
             {showEvents && (
                 <div className="admin-event-table">
                     
@@ -1124,6 +1350,7 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
                                 <th>Registration Open</th>
                                 <th>Team Participation</th>
                                 <th>Max Team Size</th>
+                                <th>Max Allowed Members</th>
                                 <th>Image</th>
                                 <th>Rulebook</th>
                                 <th>Actions</th>
@@ -1141,7 +1368,7 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
                                     <td>{event.registrationOpen ? "Yes" : "No"}</td>
                                     <td>{event.isTeamParticipation ? "Yes" : "No"}</td>
                                     <td>{event.maxTeamSize || "N/A"}</td>
-                                    
+                                    <td>{event.maxAllowedParticipants|| "N/A"}</td>
                                     {/* Image Display */}
                                     <td>
                                         {event.image ? (
@@ -1171,9 +1398,10 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
             )}
 
             <div className="admin-buttons-bar">
-                <button onClick={() => setFilter("verified")} className="filter-btn verified">Verified</button>
-                <button onClick={() => setFilter("notVerified")} className="filter-btn not-verified">Not Verified</button>
-                <button onClick={() => setFilter("all")} className="filter-btn display-all">Display All</button>
+                <button onClick={() => handleFilterChange("verified")} className="filter-btn verified">Verified</button>
+                <button onClick={() => handleFilterChange("notVerified")} className="filter-btn not-verified">Not Verified</button>
+                <button onClick={() => handleFilterChange("all")} className="filter-btn display-all">Display All</button>
+    
                 <div style={{
                     width:"300px"
                 }} >
@@ -1184,11 +1412,11 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
                         onChange={(e) => setStudentSearchQuery(e.target.value)}
                     />
 
-                    <ul>
-                        {filteredSoloStudents.map(student => (
+                    {/* <ul>
+                        {soloStudents.map(student => (
                             <li key={student.id}>{student.name} - {student.status}</li>
                         ))}
-                    </ul>
+                    </ul> */}
                 </div>
                 <div>
                     <input
@@ -1198,17 +1426,18 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
                         onChange={(e) => setTeamSearchQuery(e.target.value)}
                     />
 
-                    <ul>
-                        {filteredTeams.map(team => (
+                    {/* <ul>
+                        {teams.map(team => (
                             <li key={team.id}>{team.teamName} - Leader: {team.leaderName}</li>
                         ))}
-                    </ul>
+                    </ul> */}
                 </div>
             </div>
 
             {(soloStudents || teams) && (
                 <div className="student-section">
                     <h2 className="student-subheading">Registered Teams & Students</h2>
+                     
                     <table className="student-table">
                         <thead>
                             <tr>
@@ -1222,12 +1451,14 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
                                 <th>Receipt No</th>
                                 <th>Payment Image</th>
                                 <th>Status</th>
+                                <th>Registration Date</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {/* Solo Students */}
-                            {filteredSoloStudents.map(student => (
+                            {selectedEvent && !selectedEvent.isTeamParticipation && soloStudents.length > 0 && (
+                                soloStudents.map(student => (
                                 <tr key={student.id} className="solo-student">
                                     {teams.length > 0 && <td></td>} 
                                     <td>{student.name}</td>
@@ -1246,6 +1477,7 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
                                   </td>
 
                                     <td>{student.status}</td>
+                                    <td>{student.formattedRegistrationDate}</td> 
                                     <td>
                                         {student.status !== "verified" && (
                                             <button onClick={() => verifyStudent(student.id, student.name, selectedEvent.eventName)} className="verify-btn">Verify</button>
@@ -1253,11 +1485,12 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
                                         )}
                                     </td>
                                 </tr>
-                            ))}
+                            )))}
                             
 
                             {/* Teams */}
-                            {filteredTeams.map(team => (
+                            {selectedEvent && selectedEvent.isTeamParticipation && teams.length > 0 && (
+                                teams.map(team => (
                                 <React.Fragment key={team.id}>
                                     {/* Team Leader */}
                                     <tr className="team-leader">
@@ -1278,6 +1511,7 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
                                         </td>
 
                                         <td>{team.status}</td>
+                                        <td>{team.formattedRegistrationDate}</td>
                                         <td>
                                             {team.status !== "verified" && (
                                                 <button onClick={() => verifyTeam(team.id, team.leaderName, selectedEvent.eventName)} className="verify-btn">Verify</button>
@@ -1296,36 +1530,48 @@ const generateTeamExcel = (teamsList, eventName = "Unknown Event") => {
                                         </tr>
                                     ))}
                                 </React.Fragment>
-                            ))}
+                            )))}
                         </tbody>
                     </table>
+                    {/* Pagination Controls */}
+                    <div className="pagination-controls">
+                        <button onClick={handlePreviousPage} disabled={currentPage === 0}>Previous</button>
+                        <span>Page {currentPage + 1} of {totalPages}</span>
+                        <button onClick={handleNextPage} disabled={currentPage === totalPages - 1}>Next</button>
+                    </div>
+
                     <div className="download-buttons">
-                        {soloStudents.length > 0 && teams.length === 0 && (
+                        <select onChange={(e) => handleStudentTeamFilterChange(e.target.value)} value={filter}>
+                            <option value="all">All</option>
+                            <option value="verified">Verified</option>
+                        </select>
+
+                        <select onChange={handleDownloadFormat} value={downloadFormat}>
+                            <option value="pdf">Download as PDF</option>
+                            <option value="excel">Download as Excel</option>
+                        </select>
+
+                        {selectedEvent?.isTeamParticipation ? (
                             <>
-                                <select onChange={handleDownloadFormat} value={downloadFormat}>
-                                    <option value="pdf">Download as PDF</option>
-                                    <option value="excel">Download as Excel</option>
-                                </select>
+                                <button onClick={downloadAllTeams} disabled={filter !== "all"}>Download All</button>
+                                <button onClick={downloadVerifiedTeams} disabled={filter !== "verified"}>Download Verified</button>
+                            </>
+                        ) : (
+                            <>
                                 <button onClick={downloadAllSolo} disabled={filter !== "all"}>Download All</button>
                                 <button onClick={downloadVerifiedSolo} disabled={filter !== "verified"}>Download Verified</button>
                             </>
                         )}
-
-                        {teams.length > 0 && soloStudents.length === 0 && (
-                            <>
-                                <select onChange={handleDownloadFormat} value={downloadFormat}>
-                                    <option value="pdf">Download as PDF</option>
-                                    <option value="excel">Download as Excel</option>
-                                </select>
-                                <button onClick={downloadAllTeams} disabled={filter !== "all"}>Download All</button>
-                                <button onClick={downloadVerifiedTeams} disabled={filter !== "verified"}>Download Verified</button>
-                            </>
-                        )}
                     </div>
 
+                    
+                    <div className="participant-count">
+                        <p>Total Participants: {totalParticipants}</p>
+                    </div>
 
                 </div>
             )}
+            
         </div>
     );
 };

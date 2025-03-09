@@ -168,3 +168,12 @@
     box-shadow: 0 0 15px rgba(0, 198, 255, 0.9);
     transform: scale(1.05);
 }
+
+.image-preview {
+    max-width: 100%;
+    max-height: 200px; /* Adjust the height as needed */
+    display: block;
+    margin-top: 10px;
+    border-radius: 5px;
+    object-fit: contain;
+}

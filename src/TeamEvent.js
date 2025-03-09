@@ -2,12 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import "./TeamEvent.css";
 import qrImage from "./payment-qr.png";
+import imageCompression from "browser-image-compression";
 
 const TeamEvent = () => {
   const location = useLocation();
   const event = location.state?.event;
   const eventId = event?.id;
-
+  const [customPaymentMethod, setCustomPaymentMethod] = useState("");
   const [eventDetails, setEventDetails] = useState(null);
   const [rulebookLink, setRulebookLink] = useState(null);
 
@@ -30,15 +31,16 @@ const TeamEvent = () => {
   useEffect(() => {
     if (eventId) {
       fetch(`${process.env.REACT_APP_API_URL}/api/events/${eventId}`)
-      .then((res) => res.json())
+        .then((res) => res.json())
         .then((data) => {
           setEventDetails(data);
-          console.log("Rulebook link: ", data.rulebook);
           setRulebookLink(data.rulebook);
-          if (data.maxTeamSize > 1) {
+          
+          // Ensure maxAllowedParticipants determines the team size
+          if (data.maxAllowedParticipants > 1) {
             setFormData((prev) => ({
               ...prev,
-              teamMembers: Array.from({ length: data.maxTeamSize - 1 }, () => ({
+              teamMembers: Array.from({ length: data.maxAllowedParticipants - 1 }, () => ({
                 name: "",
                 college: "",
                 number: "",
@@ -49,30 +51,49 @@ const TeamEvent = () => {
         })
         .catch((error) => console.error("Error fetching event details:", error));
     }
-
+  
     // Fetch QR Data
     fetch(`${process.env.REACT_APP_API_URL}/api/qr/getall`)
-    .then((res) => res.json())
-          .then((data) => {
-            if (data.length > 0) {
-              setQrData({
-                upiId: data[0].upiId,
-                qrImage: `data:image/png;base64,${data[0].qrImage}`,
-              });
-            }
-          })
-          .catch((error) => console.error("Error fetching QR data:", error));
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.length > 0) {
+          setQrData({
+            upiId: data[0].upiId,
+            qrImage: `data:image/png;base64,${data[0].qrImage}`,
+          });
+        }
+      })
+      .catch((error) => console.error("Error fetching QR data:", error));
   }, [eventId]);
+  
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    setFormData({ ...formData, paymentImage: file });
-    if (file) {
+  
+
+const handleFileChange = async (event) => {
+  const file = event.target.files[0];
+
+  if (file) {
+    const options = {
+      maxSizeMB: 0.1, // 100 KB
+      maxWidthOrHeight: 800, // Adjust based on your requirement
+      useWebWorker: true,
+    };
+
+    try {
+      const compressedFile = await imageCompression(file, options);
+      setFormData({ ...formData, paymentImage: compressedFile });
+
+      // Convert to Base64 for preview
       const reader = new FileReader();
       reader.onload = () => setPreviewImage(reader.result);
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressedFile);
+    } catch (error) {
+      console.error("Error compressing image:", error);
+      alert("Failed to compress the image. Please try again.");
     }
-  };
+  }
+};
+
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -97,6 +118,13 @@ const TeamEvent = () => {
         data.append(key, formData[key]);
       }
     });
+
+    if (formData.paymentMethod === "other" && formData.customPaymentMethod) {
+      // Send only the custom payment method value (not 'other')
+      data.append("paymentMethod", formData.customPaymentMethod);
+    } else {
+      data.append("paymentMethod", formData.paymentMethod);
+    }
     data.append("eventId", eventId);
     data.append("teamMembers", JSON.stringify(formData.teamMembers));
   
@@ -121,6 +149,7 @@ const TeamEvent = () => {
   
 
   return (
+    
     <div className="event-container">
       {eventDetails && (
         <div className="form-container">
@@ -155,7 +184,7 @@ const TeamEvent = () => {
               <div>
                 <p className="mb-2">Payment Method:</p>
                 <div className="checkbox-container">
-                  {["paytm", "phonepay", "gpay", "bank", "cash"].map((method) => (
+                  {["paytm", "phonepay", "gpay", "bank", "cash", "other"].map((method) => (
                     <label key={method}>
                       <input type="radio" name="paymentMethod" value={method} checked={formData.paymentMethod === method} onChange={handleChange} />
                       {method.charAt(0).toUpperCase() + method.slice(1)}
@@ -163,6 +192,13 @@ const TeamEvent = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Show custom input field for "Other" payment method */}
+              {formData.paymentMethod === "other" && (
+                <div className="input-group">
+                  <input type="text" name="customPaymentMethod" required placeholder="Enter Custom Payment Method" value={formData.customPaymentMethod} onChange={handleChange} />
+                </div>
+              )}
   
               {formData.paymentMethod !== "cash" ? (
                               <>

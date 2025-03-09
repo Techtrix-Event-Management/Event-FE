@@ -900,3 +900,60 @@ button[type="submit"]:hover {
   margin-top: 10px;
   font-weight: bold;
 }
+
+
+.participant-count {
+  text-align: right;
+  font-weight: bold;
+  margin-top: 10px;
+  margin-right: 20px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  background: rgba(0, 123, 255, 0.2); /* Light blue translucent */
+  color: #007bff; /* Blue text */
+  display: inline-block;
+  border: 1px solid #007bff;
+}
+
+/* .pagination-controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.pagination-controls button {
+  padding: 10px;
+  margin: 0 5px;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+}
+
+.pagination-controls button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.pagination-controls span {
+  margin: 0 10px;
+} */
+
+
+.event-input::placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+/* Unique placeholder style for maxTeamSize */
+.max-team-size-input::placeholder {
+  color: #666;
+  font-weight: bold;
+}
+
+/* Unique placeholder style for maxAllowedParticipants */
+.max-allowed-participants-input::placeholder {
+  color: #444;
+  font-style: normal;
+  font-weight: 600;
+}

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import "./Event.css";
+import imageCompression from "browser-image-compression";
 
 const Event = () => {
   const location = useLocation();
   const event = location.state?.event; // Get the event object
   const eventId = event?.id;
+  const [customPaymentMethod, setCustomPaymentMethod] = useState("");
 
   useEffect(() => {
     document.body.style.background = "transparent";
@@ -54,21 +56,43 @@ const Event = () => {
       .catch((error) => console.error("Error fetching QR data:", error));
   }, [eventId]);
   
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    setFormData({ ...formData, paymentImage: file });
+  
 
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => setPreviewImage(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
+const handleFileChange = async (event) => {
+  const file = event.target.files[0];
+
+  if (!file) return;
+
+  try {
+    const options = {
+      maxSizeMB: 0.1, // Maximum file size (200KB)
+      maxWidthOrHeight: 800, // Maximum width/height
+      useWebWorker: true,
+    };
+
+    const compressedFile = await imageCompression(file, options);
+
+    setFormData({ ...formData, paymentImage: compressedFile });
+
+    // Convert to base64 for preview
+    const reader = new FileReader();
+    reader.onload = () => setPreviewImage(reader.result);
+    reader.readAsDataURL(compressedFile);
+
+  } catch (error) {
+    console.error("Error compressing image:", error);
+  }
+};
+
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const { name, value } = e.target;
+  setFormData({ ...formData, [name]: value });
 
+    if (name === "paymentMethod" && value !== "other") {
+      setCustomPaymentMethod(""); // Reset custom input if not "Other"
+    }
+  };
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!eventId) {
@@ -80,13 +104,19 @@ const Event = () => {
     Object.keys(formData).forEach((key) => {
       if (formData[key]) data.append(key, formData[key]);
     });
+  
+    // Replace "other" with the actual custom payment method entered by the user
+    if (formData.paymentMethod === "other" && customPaymentMethod.trim() !== "") {
+      data.set("paymentMethod", customPaymentMethod);
+    }
+  
     data.append("eventId", eventId);
   
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/registered-students/register`, { 
         method: "POST",
         body: data,
-        credentials: "include", // Ensure cookies are included
+        credentials: "include",
       });
   
       if (response.ok) {
@@ -100,6 +130,8 @@ const Event = () => {
       alert("Registration failed.");
     }
   };
+  
+  
   
 
   return (
@@ -124,21 +156,39 @@ const Event = () => {
               <div className="input-group">
                 <input type="tel" name="number" placeholder="Contact Number" required pattern="[0-9]{10}" onChange={handleChange} />
               </div>
-              <div className="input-group">
-                <input type="text" name="branch" placeholder="Branch" required onChange={handleChange} />
-              </div>
+              
 
               <div>
                 <p className="mb-2">Payment Method:</p>
                 <div className="checkbox-container">
-                  {["paytm", "phonepay", "gpay", "bank", "cash"].map((method) => (
+                  {["paytm", "phonepay", "gpay", "other", "cash"].map((method) => (
                     <label key={method}>
-                      <input type="radio" name="paymentMethod" value={method} checked={formData.paymentMethod === method} onChange={handleChange} />
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value={method}
+                        checked={formData.paymentMethod === method}
+                        onChange={handleChange}
+                      />
                       {method.charAt(0).toUpperCase() + method.slice(1)}
                     </label>
                   ))}
                 </div>
               </div>
+
+              {formData.paymentMethod === "other" && (
+                <div className="input-group">
+                  <input
+                    type="text"
+                    name="customPaymentMethod"
+                    placeholder="Enter payment method"
+                    required
+                    value={customPaymentMethod}
+                    onChange={(e) => setCustomPaymentMethod(e.target.value)}
+                  />
+                </div>
+              )}
+
 
               {formData.paymentMethod !== "cash" ? (
                 <>
