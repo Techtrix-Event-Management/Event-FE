@@ -8,7 +8,7 @@ const Home = () => {
   const [events, setEvents] = useState([]);
   const [countdown, setCountdown] = useState("");
 
-  const targetDate = new Date("2025-03-21T00:00:00").getTime(); // Set your target date
+  const targetDate = new Date("2025-03-26T00:00:00").getTime(); // Set your target date
   const [timeLeft, setTimeLeft] = useState(getTimeRemaining(targetDate));
 
   function getTimeRemaining(target) {
