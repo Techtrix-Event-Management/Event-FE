@@ -155,7 +155,7 @@ const handleFileChange = async (event) => {
         <div className="form-container">
           {!isSubmitted && <h2>Register Your Team for {eventDetails.eventName}</h2>}
           {isSubmitted ? (
-            <p className="success-message">Registration pending. You will be notified by email.</p>
+            <p className="success-message">Thank You for your participation in Techtrix 2k25. Our Team will Verify your registration. Stay tuned to the upcoming updates on email.</p>
           ) : (
             <form onSubmit={handleSubmit}>
               <div className="input-group">
